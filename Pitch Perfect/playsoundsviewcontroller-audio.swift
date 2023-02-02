@@ -7,6 +7,7 @@
 import UIKit
 import AVFoundation
 
+// MARK: - PlaySoundsViewController: AVAudioPlayerDelegate
 extension PlaySoundsViewController: AVAudioPlayerDelegate {
     
     // MARK: Alerts
@@ -31,6 +32,7 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
     // MARK: Audio Functions
     
     func setupAudio() {
+        // initialize (recording) audio file
         do {
             audioFile = try AVAudioFile(forReading: recordedAudioURL as URL)
         } catch {
@@ -38,15 +40,16 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
         }
     }
     
-    // MARK: PlaySound
-    
     func playSound(rate: Float? = nil, pitch: Float? = nil, echo: Bool = false, reverb: Bool = false) {
         
+        // initialize audio engine components
         audioEngine = AVAudioEngine()
         
+        // node for playing audio
         audioPlayerNode = AVAudioPlayerNode()
         audioEngine.attach(audioPlayerNode)
         
+        // node for adjusting rate/pitch
         let changeRatePitchNode = AVAudioUnitTimePitch()
         if let pitch = pitch {
             changeRatePitchNode.pitch = pitch
@@ -56,15 +59,18 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
         }
         audioEngine.attach(changeRatePitchNode)
         
+        // node for echo
         let echoNode = AVAudioUnitDistortion()
         echoNode.loadFactoryPreset(.multiEcho1)
         audioEngine.attach(echoNode)
         
+        // node for reverb
         let reverbNode = AVAudioUnitReverb()
         reverbNode.loadFactoryPreset(.cathedral)
         reverbNode.wetDryMix = 50
         audioEngine.attach(reverbNode)
         
+        // connect nodes
         if echo == true && reverb == true {
             connectAudioNodes(audioPlayerNode, changeRatePitchNode, echoNode, reverbNode, audioEngine.outputNode)
         } else if echo == true {
@@ -75,6 +81,7 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
             connectAudioNodes(audioPlayerNode, changeRatePitchNode, audioEngine.outputNode)
         }
         
+        // schedule to play and start the engine!
         audioPlayerNode.stop()
         audioPlayerNode.scheduleFile(audioFile, at: nil) {
             
@@ -89,6 +96,7 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
                 }
             }
             
+            // schedule a stop timer for when audio finishes playing
             self.stopTimer = Timer(timeInterval: delayInSeconds, target: self, selector: #selector(PlaySoundsViewController.stopAudio), userInfo: nil, repeats: false)
             RunLoop.main.add(self.stopTimer!, forMode: RunLoop.Mode.default)
         }
@@ -100,6 +108,7 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
             return
         }
         
+        // play the recording!
         audioPlayerNode.play()
     }
     
@@ -130,7 +139,6 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
     }
     
     // MARK: UI Functions
-
     func configureUI(_ playState: PlayingState) {
         switch(playState) {
         case .playing:
@@ -142,14 +150,15 @@ extension PlaySoundsViewController: AVAudioPlayerDelegate {
         }
     }
     
-    // MARK: Set Enable button
-    
     func setPlayButtonsEnabled(_ enabled: Bool) {
-        
+        snailButton.isEnabled = enabled
+        chipmunkButton.isEnabled = enabled
+        rabbitButton.isEnabled = enabled
+        vaderButton.isEnabled = enabled
+        echoButton.isEnabled = enabled
+        reverbButton.isEnabled = enabled
     }
 
-    // MARK: Show Alerts app
-    
     func showAlert(_ title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: Alerts.DismissAlert, style: .default, handler: nil))
